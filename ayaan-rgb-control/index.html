@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0c0f">
+  <title>AYAAN RGB Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Ayaan RGB Control">
+        <span class="brand-mark"><i></i><i></i><i></i></span>
+        <span><b>AYAAN</b><small>RGB CONTROL</small></span>
+      </a>
+      <div class="device-pill">
+        <span class="led-dot" id="connectionDot"></span>
+        <span id="connectionStatus">OFFLINE</span>
+        <em>ESP32-S3 / GPIO 38</em>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">HARDWARE / 001</p>
+          <h1>LIGHT,<br><span>YOUR WAY.</span></h1>
+          <p class="intro">A direct control panel for your ESP32 RGB system. Pick a colour, choose an effect, and let the hardware do the rest.</p>
+          <div class="hero-meta">
+            <span><b id="heroEffect">OFF</b> EFFECT</span>
+            <span><b id="heroRGB">0, 0, 0</b> RGB</span>
+          </div>
+        </div>
+        <div class="orb-wrap">
+          <div class="orb-glow" id="orbGlow"></div>
+          <div class="orb" id="orb"></div>
+          <div class="orb-label"><span>LIVE OUTPUT</span><b id="hexValue">#0050FF</b></div>
+        </div>
+      </section>
+
+      <div class="section-line"><span>CONTROL</span><i></i><small>01</small></div>
+
+      <section class="control-grid">
+        <article class="panel color-panel">
+          <div class="panel-head"><div><span class="index">01</span><h2>Colour</h2></div><span class="mono" id="colorValue">#0050FF</span></div>
+          <div class="picker-row">
+            <input type="color" id="colorPicker" value="#0050ff" aria-label="Choose RGB colour">
+            <div class="color-readout"><span>SELECTED</span><strong id="rgbValue">0 / 80 / 255</strong></div>
+          </div>
+          <button class="action-button" id="applyColor">SET COLOUR <span>↗</span></button>
+          <div class="quick-colors">
+            <button data-color="255,0,0" class="swatch red" aria-label="Red"></button>
+            <button data-color="0,255,0" class="swatch green" aria-label="Green"></button>
+            <button data-color="0,0,255" class="swatch blue" aria-label="Blue"></button>
+            <button data-color="128,0,255" class="swatch purple" aria-label="Purple"></button>
+            <button data-color="255,255,255" class="swatch white" aria-label="White"></button>
+            <button data-off="true" class="swatch black" aria-label="Off"></button>
+          </div>
+        </article>
+
+        <article class="panel effect-panel">
+          <div class="panel-head"><div><span class="index">02</span><h2>Effects</h2></div><span class="mono">13 MODES</span></div>
+          <div class="effects" id="effects">
+            <button data-effect="OFF">OFF</button>
+            <button data-effect="SOLID" class="selected">SOLID</button>
+            <button data-effect="BLINK">BLINK</button>
+            <button data-effect="FAST_BLINK">FAST BLINK</button>
+            <button data-effect="SLOW_BLINK">SLOW BLINK</button>
+            <button data-effect="PULSE">PULSE</button>
+            <button data-effect="BREATHE">BREATHE</button>
+            <button data-effect="STROBE">STROBE</button>
+            <button data-effect="RAINBOW">RAINBOW</button>
+            <button data-effect="RAINBOW_FAST">RAINBOW FAST</button>
+            <button data-effect="RANDOM">RANDOM</button>
+            <button data-effect="POLICE">POLICE</button>
+            <button data-effect="FIRE">FIRE</button>
+          </div>
+        </article>
+      </section>
+
+      <div class="section-line"><span>OUTPUT</span><i></i><small>02</small></div>
+
+      <section class="output-grid">
+        <article class="panel slider-panel">
+          <div class="panel-head"><div><span class="index">03</span><h2>Brightness</h2></div><strong class="big-value" id="brightnessValue">100%</strong></div>
+          <input class="range" type="range" id="brightness" min="0" max="100" value="100">
+          <div class="range-labels"><span>0</span><span>50</span><span>100</span></div>
+          <button class="action-button" id="applyBrightness">APPLY BRIGHTNESS <span>↗</span></button>
+        </article>
+
+        <article class="panel slider-panel">
+          <div class="panel-head"><div><span class="index">04</span><h2>Speed</h2></div><strong class="big-value" id="speedValue">50%</strong></div>
+          <input class="range" type="range" id="speed" min="0" max="100" value="50">
+          <div class="range-labels"><span>SLOW</span><span>NORMAL</span><span>FAST</span></div>
+          <button class="action-button" id="applySpeed">APPLY SPEED <span>↗</span></button>
+        </article>
+      </section>
+
+      <div class="section-line"><span>SYSTEM</span><i></i><small>03</small></div>
+
+      <section class="system-panel panel">
+        <div class="system-title"><div><span class="index">05</span><h2>Device status</h2></div><span class="live-badge" id="statusBadge">WAITING</span></div>
+        <div class="status-grid">
+          <div><span>EFFECT</span><b id="stateEffect">—</b></div>
+          <div><span>RGB</span><b id="stateRGB">—</b></div>
+          <div><span>BRIGHTNESS</span><b id="stateBrightness">—</b></div>
+          <div><span>SPEED</span><b id="stateSpeed">—</b></div>
+          <div><span>IP ADDRESS</span><b id="stateIP">—</b></div>
+          <div><span>WI-FI RSSI</span><b id="stateRSSI">—</b></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>AYAAN / RGB CONTROL</span>
+      <span>MQTT • ESP32-S3 • GPIO 38</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
