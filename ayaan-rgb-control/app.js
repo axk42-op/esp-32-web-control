@@ -1,5 +1,5 @@
 const MQTT_BROKER =
-    "wss://branches-solved-attorney-continuously.trycloudflare.com/mqtt";
+    "wss://jackson-aging-editorials-electro.trycloudflare.com/mqtt";
 
 const MQTT_USERNAME = "ayaan";
 const MQTT_PASSWORD = "Kichu@040414";
