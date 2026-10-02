@@ -1,5 +1,5 @@
 const MQTT_BROKER =
-    "wss://branches-solved-attorney-continuously.trycloudflare.com";
+    "wss://branches-solved-attorney-continuously.trycloudflare.com/mqtt";
 
 const MQTT_USERNAME = "ayaan";
 const MQTT_PASSWORD = "Kichu@040414";
@@ -17,11 +17,20 @@ const STATUS_TOPIC =
 const connectionStatus =
     document.getElementById("connectionStatus");
 
+const connectionDot =
+    document.getElementById("connectionDot");
+
+const statusBadge =
+    document.getElementById("statusBadge");
+
 const colorPicker =
     document.getElementById("colorPicker");
 
 const colorPreview =
     document.getElementById("colorPreview");
+
+const orbGlow =
+    document.getElementById("orbGlow");
 
 const brightness =
     document.getElementById("brightness");
@@ -35,6 +44,25 @@ const brightnessValue =
 const speedValue =
     document.getElementById("speedValue");
 
+const colorValue =
+    document.getElementById("colorValue");
+
+const rgbValue =
+    document.getElementById("rgbValue");
+
+const hexValue =
+    document.getElementById("hexValue");
+
+const heroEffect =
+    document.getElementById("heroEffect");
+
+const heroRGB =
+    document.getElementById("heroRGB");
+
+
+/* =========================
+   CONNECTION STATUS
+========================= */
 
 function setConnectionStatus(online) {
 
@@ -45,15 +73,37 @@ function setConnectionStatus(online) {
         connectionStatus.classList.remove("offline");
         connectionStatus.classList.add("online");
 
+        if (connectionDot) {
+            connectionDot.classList.add("online");
+        }
+
+        if (statusBadge) {
+            statusBadge.textContent = "ONLINE";
+            statusBadge.classList.add("live");
+        }
+
     } else {
 
         connectionStatus.textContent = "● Offline";
 
         connectionStatus.classList.remove("online");
         connectionStatus.classList.add("offline");
+
+        if (connectionDot) {
+            connectionDot.classList.remove("online");
+        }
+
+        if (statusBadge) {
+            statusBadge.textContent = "OFFLINE";
+            statusBadge.classList.remove("live");
+        }
     }
 }
 
+
+/* =========================
+   MQTT CONNECTION
+========================= */
 
 const client = mqtt.connect(MQTT_BROKER, {
 
@@ -61,7 +111,11 @@ const client = mqtt.connect(MQTT_BROKER, {
     password: MQTT_PASSWORD,
 
     reconnectPeriod: 3000,
-    connectTimeout: 10000
+    connectTimeout: 10000,
+
+    protocolVersion: 4,
+
+    clean: true
 });
 
 
@@ -71,8 +125,29 @@ client.on("connect", () => {
 
     setConnectionStatus(true);
 
-    client.subscribe(STATE_TOPIC);
-    client.subscribe(STATUS_TOPIC);
+    client.subscribe(
+        STATE_TOPIC,
+        error => {
+            if (error) {
+                console.error(
+                    "STATE subscribe error:",
+                    error
+                );
+            }
+        }
+    );
+
+    client.subscribe(
+        STATUS_TOPIC,
+        error => {
+            if (error) {
+                console.error(
+                    "STATUS subscribe error:",
+                    error
+                );
+            }
+        }
+    );
 
 });
 
@@ -88,6 +163,8 @@ client.on("reconnect", () => {
 
 client.on("close", () => {
 
+    console.log("MQTT connection closed");
+
     setConnectionStatus(false);
 
 });
@@ -95,18 +172,29 @@ client.on("close", () => {
 
 client.on("error", error => {
 
-    console.error("MQTT error:", error);
+    console.error(
+        "MQTT error:",
+        error
+    );
 
     setConnectionStatus(false);
 
 });
 
 
+/* =========================
+   MQTT MESSAGES
+========================= */
+
 client.on("message", (topic, message) => {
 
-    const data = message.toString();
+    const data =
+        message.toString();
 
-    console.log(topic, data);
+    console.log(
+        topic,
+        data
+    );
 
 
     if (topic === STATUS_TOPIC) {
@@ -127,7 +215,8 @@ client.on("message", (topic, message) => {
 
         try {
 
-            const state = JSON.parse(data);
+            const state =
+                JSON.parse(data);
 
             updateState(state);
 
@@ -139,11 +228,14 @@ client.on("message", (topic, message) => {
             );
 
         }
-
     }
 
 });
 
+
+/* =========================
+   PUBLISH COMMAND
+========================= */
 
 function publishCommand(command) {
 
@@ -153,35 +245,59 @@ function publishCommand(command) {
             "MQTT is not connected"
         );
 
+        showToast("MQTT OFFLINE");
+
         return;
     }
 
 
     client.publish(
         COMMAND_TOPIC,
-        command
+        command,
+        {
+            qos: 0,
+            retain: false
+        },
+        error => {
+
+            if (error) {
+
+                console.error(
+                    "Publish error:",
+                    error
+                );
+
+                showToast("COMMAND FAILED");
+
+                return;
+            }
+
+            console.log(
+                "Command:",
+                command
+            );
+        }
     );
-
-
-    console.log(
-        "Command:",
-        command
-    );
-
 }
 
+
+/* =========================
+   COMMANDS
+========================= */
 
 function sendColor(r, g, b) {
 
     publishCommand(
         JSON.stringify({
+
             action: "color",
+
             r: r,
             g: g,
             b: b
+
         })
     );
-
 }
 
 
@@ -189,11 +305,13 @@ function sendEffect(effect) {
 
     publishCommand(
         JSON.stringify({
+
             action: "effect",
+
             value: effect
+
         })
     );
-
 }
 
 
@@ -201,11 +319,13 @@ function sendBrightness(value) {
 
     publishCommand(
         JSON.stringify({
+
             action: "brightness",
+
             value: Number(value)
+
         })
     );
-
 }
 
 
@@ -213,11 +333,13 @@ function sendSpeed(value) {
 
     publishCommand(
         JSON.stringify({
+
             action: "speed",
+
             value: Number(value)
+
         })
     );
-
 }
 
 
@@ -225,16 +347,22 @@ function sendOff() {
 
     publishCommand(
         JSON.stringify({
+
             action: "off"
+
         })
     );
-
 }
 
 
+/* =========================
+   COLOR HELPERS
+========================= */
+
 function hexToRGB(hex) {
 
-    const value = hex.replace("#", "");
+    const value =
+        hex.replace("#", "");
 
     return {
 
@@ -254,35 +382,193 @@ function hexToRGB(hex) {
         )
 
     };
-
 }
 
+
+function rgbToHex(r, g, b) {
+
+    return "#" +
+        [r, g, b]
+            .map(value =>
+                Number(value)
+                    .toString(16)
+                    .padStart(2, "0")
+            )
+            .join("");
+}
+
+
+/* =========================
+   COLOR PREVIEW
+========================= */
 
 function updateColorPreview() {
 
-    colorPreview.style.background =
+    if (!colorPicker ||
+        !colorPreview) {
+
+        return;
+    }
+
+
+    const hex =
         colorPicker.value;
 
+
+    colorPreview.style.background =
+        hex;
+
+
     colorPreview.style.boxShadow =
-        "0 0 35px " + colorPicker.value;
+        `inset -18px -22px 40px rgba(0,0,0,.28),
+         inset 12px 10px 28px rgba(255,255,255,.12),
+         0 0 35px ${hex}`;
+
+
+    if (orbGlow) {
+
+        orbGlow.style.background =
+            hex;
+    }
+
+
+    if (colorValue) {
+
+        colorValue.textContent =
+            hex.toUpperCase();
+    }
+
+
+    if (hexValue) {
+
+        hexValue.textContent =
+            hex.toUpperCase();
+    }
+
+
+    const rgb =
+        hexToRGB(hex);
+
+
+    if (rgbValue) {
+
+        rgbValue.textContent =
+            `${rgb.r} / ${rgb.g} / ${rgb.b}`;
+    }
+
+
+    if (heroRGB) {
+
+        heroRGB.textContent =
+            `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+    }
+}
+
+
+/* =========================
+   EFFECT SELECTION
+========================= */
+
+function selectEffectButton(effect) {
+
+    document
+        .querySelectorAll("[data-effect]")
+        .forEach(button => {
+
+            button.classList.toggle(
+                "selected",
+                button.dataset.effect === effect
+            );
+
+        });
+
+
+    if (heroEffect) {
+
+        heroEffect.textContent =
+            effect;
+    }
+
+
+    const stateEffect =
+        document.getElementById("stateEffect");
+
+    if (stateEffect) {
+
+        stateEffect.textContent =
+            effect;
+    }
+}
+
+
+/* =========================
+   TOAST
+========================= */
+
+function showToast(message) {
+
+    const toast =
+        document.getElementById("toast");
+
+    if (!toast) return;
+
+
+    toast.textContent =
+        message;
+
+
+    toast.classList.add("show");
+
+
+    clearTimeout(
+        showToast.timer
+    );
+
+
+    showToast.timer =
+        setTimeout(() => {
+
+            toast.classList.remove(
+                "show"
+            );
+
+        }, 1600);
+}
+
+
+/* =========================
+   COLOR PICKER
+========================= */
+
+if (colorPicker) {
+
+    colorPicker.addEventListener(
+        "input",
+        updateColorPreview
+    );
 
 }
 
 
-colorPicker.addEventListener(
-    "input",
-    updateColorPreview
-);
+/* =========================
+   SET COLOR
+========================= */
+
+const applyColor =
+    document.getElementById("applyColor");
 
 
-document
-    .getElementById("applyColor")
-    .addEventListener(
+if (applyColor) {
+
+    applyColor.addEventListener(
         "click",
         () => {
 
             const rgb =
-                hexToRGB(colorPicker.value);
+                hexToRGB(
+                    colorPicker.value
+                );
+
 
             sendColor(
                 rgb.r,
@@ -290,17 +576,37 @@ document
                 rgb.b
             );
 
+
+            selectEffectButton(
+                "SOLID"
+            );
+
+
+            showToast(
+                "COLOUR SENT"
+            );
+
         }
     );
+}
 
+
+/* =========================
+   QUICK COLORS
+
+   IMPORTANT:
+   HTML uses .swatch
+========================= */
 
 document
-    .querySelectorAll(".color-btn")
+    .querySelectorAll(".swatch")
     .forEach(button => {
 
         button.addEventListener(
             "click",
             () => {
+
+                /* OFF */
 
                 if (
                     button.dataset.off === "true"
@@ -308,14 +614,50 @@ document
 
                     sendOff();
 
+
+                    if (colorPicker) {
+
+                        colorPicker.value =
+                            "#000000";
+
+                        updateColorPreview();
+                    }
+
+
+                    selectEffectButton(
+                        "OFF"
+                    );
+
+
+                    showToast(
+                        "LED OFF"
+                    );
+
+
                     return;
                 }
 
+
+                /* COLOR */
 
                 const values =
                     button.dataset.color
                         .split(",")
                         .map(Number);
+
+
+                if (colorPicker) {
+
+                    colorPicker.value =
+                        rgbToHex(
+                            values[0],
+                            values[1],
+                            values[2]
+                        );
+
+
+                    updateColorPreview();
+                }
 
 
                 sendColor(
@@ -324,11 +666,25 @@ document
                     values[2]
                 );
 
+
+                selectEffectButton(
+                    "SOLID"
+                );
+
+
+                showToast(
+                    "COLOUR SENT"
+                );
+
             }
         );
 
     });
 
+
+/* =========================
+   EFFECT BUTTONS
+========================= */
 
 document
     .querySelectorAll("[data-effect]")
@@ -338,8 +694,22 @@ document
             "click",
             () => {
 
+                const effect =
+                    button.dataset.effect;
+
+
                 sendEffect(
-                    button.dataset.effect
+                    effect
+                );
+
+
+                selectEffectButton(
+                    effect
+                );
+
+
+                showToast(
+                    effect + " SENT"
                 );
 
             }
@@ -348,31 +718,63 @@ document
     });
 
 
-brightness.addEventListener(
-    "input",
-    () => {
+/* =========================
+   BRIGHTNESS SLIDER
+========================= */
 
-        brightnessValue.textContent =
-            brightness.value + "%";
+if (brightness) {
 
-    }
-);
+    brightness.addEventListener(
+        "input",
+        () => {
+
+            if (brightnessValue) {
+
+                brightnessValue.textContent =
+                    brightness.value + "%";
+            }
+
+        }
+    );
+
+}
 
 
-speed.addEventListener(
-    "input",
-    () => {
+/* =========================
+   SPEED SLIDER
+========================= */
 
-        speedValue.textContent =
-            speed.value + "%";
+if (speed) {
 
-    }
-);
+    speed.addEventListener(
+        "input",
+        () => {
+
+            if (speedValue) {
+
+                speedValue.textContent =
+                    speed.value + "%";
+            }
+
+        }
+    );
+
+}
 
 
-document
-    .getElementById("applyBrightness")
-    .addEventListener(
+/* =========================
+   APPLY BRIGHTNESS
+========================= */
+
+const applyBrightness =
+    document.getElementById(
+        "applyBrightness"
+    );
+
+
+if (applyBrightness) {
+
+    applyBrightness.addEventListener(
         "click",
         () => {
 
@@ -380,13 +782,30 @@ document
                 brightness.value
             );
 
+
+            showToast(
+                `BRIGHTNESS ${brightness.value}%`
+            );
+
         }
     );
 
+}
 
-document
-    .getElementById("applySpeed")
-    .addEventListener(
+
+/* =========================
+   APPLY SPEED
+========================= */
+
+const applySpeed =
+    document.getElementById(
+        "applySpeed"
+    );
+
+
+if (applySpeed) {
+
+    applySpeed.addEventListener(
         "click",
         () => {
 
@@ -394,21 +813,49 @@ document
                 speed.value
             );
 
+
+            showToast(
+                `SPEED ${speed.value}%`
+            );
+
         }
     );
 
+}
+
+
+/* =========================
+   DEVICE STATE
+========================= */
 
 function updateState(state) {
 
-    if (state.effect !== undefined) {
+    /* EFFECT */
 
-        document
-            .getElementById("stateEffect")
-            .textContent =
-            state.effect;
+    if (
+        state.effect !== undefined
+    ) {
 
+        const stateEffect =
+            document.getElementById(
+                "stateEffect"
+            );
+
+
+        if (stateEffect) {
+
+            stateEffect.textContent =
+                state.effect;
+        }
+
+
+        selectEffectButton(
+            state.effect
+        );
     }
 
+
+    /* RGB */
 
     if (
         state.r !== undefined &&
@@ -416,88 +863,150 @@ function updateState(state) {
         state.b !== undefined
     ) {
 
-        document
-            .getElementById("stateRGB")
-            .textContent =
-            state.r +
-            ", " +
-            state.g +
-            ", " +
-            state.b;
+        const stateRGB =
+            document.getElementById(
+                "stateRGB"
+            );
+
+
+        if (stateRGB) {
+
+            stateRGB.textContent =
+                `${state.r}, ${state.g}, ${state.b}`;
+        }
 
 
         const hex =
-            "#" +
-            [state.r, state.g, state.b]
-                .map(value =>
-                    Number(value)
-                        .toString(16)
-                        .padStart(2, "0")
-                )
-                .join("");
+            rgbToHex(
+                state.r,
+                state.g,
+                state.b
+            );
 
 
-        colorPicker.value = hex;
+        if (colorPicker) {
 
-        updateColorPreview();
+            colorPicker.value =
+                hex;
 
+            updateColorPreview();
+        }
     }
 
 
-    if (state.brightness !== undefined) {
+    /* BRIGHTNESS */
 
-        brightness.value =
-            state.brightness;
+    if (
+        state.brightness !== undefined
+    ) {
 
-        brightnessValue.textContent =
-            state.brightness + "%";
+        if (brightness) {
+
+            brightness.value =
+                state.brightness;
+        }
 
 
-        document
-            .getElementById("stateBrightness")
-            .textContent =
-            state.brightness + "%";
+        if (brightnessValue) {
 
+            brightnessValue.textContent =
+                state.brightness + "%";
+        }
+
+
+        const stateBrightness =
+            document.getElementById(
+                "stateBrightness"
+            );
+
+
+        if (stateBrightness) {
+
+            stateBrightness.textContent =
+                state.brightness + "%";
+        }
     }
 
 
-    if (state.speed !== undefined) {
+    /* SPEED */
 
-        speed.value =
-            state.speed;
+    if (
+        state.speed !== undefined
+    ) {
 
-        speedValue.textContent =
-            state.speed + "%";
+        if (speed) {
+
+            speed.value =
+                state.speed;
+        }
 
 
-        document
-            .getElementById("stateSpeed")
-            .textContent =
-            state.speed + "%";
+        if (speedValue) {
 
+            speedValue.textContent =
+                state.speed + "%";
+        }
+
+
+        const stateSpeed =
+            document.getElementById(
+                "stateSpeed"
+            );
+
+
+        if (stateSpeed) {
+
+            stateSpeed.textContent =
+                state.speed + "%";
+        }
     }
 
 
-    if (state.ip !== undefined) {
+    /* IP */
 
-        document
-            .getElementById("stateIP")
-            .textContent =
-            state.ip;
+    if (
+        state.ip !== undefined
+    ) {
 
+        const stateIP =
+            document.getElementById(
+                "stateIP"
+            );
+
+
+        if (stateIP) {
+
+            stateIP.textContent =
+                state.ip;
+        }
     }
 
 
-    if (state.wifi_rssi !== undefined) {
+    /* RSSI */
 
-        document
-            .getElementById("stateRSSI")
-            .textContent =
-            state.wifi_rssi + " dBm";
+    if (
+        state.wifi_rssi !== undefined
+    ) {
 
+        const stateRSSI =
+            document.getElementById(
+                "stateRSSI"
+            );
+
+
+        if (stateRSSI) {
+
+            stateRSSI.textContent =
+                state.wifi_rssi + " dBm";
+        }
     }
-
 }
 
+
+/* =========================
+   INITIAL UI
+========================= */
+
+setConnectionStatus(false);
 
 updateColorPreview();
