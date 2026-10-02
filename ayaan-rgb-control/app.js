@@ -1,4 +1,5 @@
-const MQTT_BROKER = "ws://192.168.1.40:9001";
+const MQTT_BROKER =
+    "wss://branches-solved-attorney-continuously.trycloudflare.com";
 const MQTT_USERNAME = "ayaan";
 const MQTT_PASSWORD = "Kichu@040414";
 
@@ -49,8 +50,8 @@ function selectEffect(effect) {
 }
 
 const client = mqtt.connect(MQTT_BROKER, {
-  username: MQTT_USERNAME,
-  password: MQTT_PASSWORD,
+  username: ayaan,
+  password: Kichu@040414,
   reconnectPeriod: 3000,
   connectTimeout: 10000,
   clean: true
